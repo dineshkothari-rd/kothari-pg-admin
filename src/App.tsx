@@ -1,15 +1,18 @@
-import { Button, Container, Typography } from "@mui/material";
-import "./App.css";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import AdminLayout from "./layout/AdminLayout";
+import Dashboard from "./pages/Dashboard";
+import Students from "./pages/Students";
 
 function App() {
   return (
-    <Container sx={{ mt: 8 }}>
-      <Typography variant="h4" gutterBottom>
-        Kothari PG Admin Dashboard
-      </Typography>
-
-      <Button variant="contained">Test Button</Button>
-    </Container>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="students" element={<Students />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
