@@ -297,11 +297,7 @@ export default function Students() {
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => {
-                setSearch("");
-                setRoomFilter("All");
-                setStatusFilter("All");
-              }}
+              onClick={handleResetFilters}
               sx={{ height: 40, borderRadius: 2 }}
             >
               Reset
