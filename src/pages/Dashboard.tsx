@@ -111,7 +111,7 @@ export default function Dashboard() {
                 nameKey="name"
                 outerRadius={100}
               >
-                {revenueData.map((entry, index) => (
+                {revenueData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index]} />
                 ))}
               </Pie>
