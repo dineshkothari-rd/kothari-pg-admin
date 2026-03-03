@@ -31,6 +31,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import Tooltip from "@mui/material/Tooltip";
+import TableSortLabel from "@mui/material/TableSortLabel";
 
 interface Student {
   id: number;
@@ -52,6 +53,8 @@ export default function Students() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [orderBy, setOrderBy] = useState<keyof Student>("name");
+  const [order, setOrder] = useState<"asc" | "desc">("asc");
 
   const openMenu = Boolean(anchorEl);
   /* -------- States -------- */
@@ -108,6 +111,9 @@ export default function Students() {
   const totalSeats = SINGLE_TOTAL_SEATS + DOUBLE_TOTAL_SEATS;
   const totalOccupied = singleOccupied + doubleOccupied;
   const totalVacant = totalSeats - totalOccupied;
+
+  const occupancyPercentage =
+    totalSeats === 0 ? 0 : Math.round((totalOccupied / totalSeats) * 100);
 
   /* -------- Financial Logic -------- */
 
@@ -228,6 +234,25 @@ export default function Students() {
     setAnchorEl(null);
     setSelectedStudent(null);
   };
+
+  const handleSort = (property: keyof Student) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const sortedStudents = [...filteredStudents].sort((a, b) => {
+    const aValue = a[orderBy];
+    const bValue = b[orderBy];
+
+    if (typeof aValue === "number" && typeof bValue === "number") {
+      return order === "asc" ? aValue - bValue : bValue - aValue;
+    }
+
+    return order === "asc"
+      ? String(aValue).localeCompare(String(bValue))
+      : String(bValue).localeCompare(String(aValue));
+  });
 
   return (
     <Box sx={{ maxWidth: 1200, mx: "auto", pb: 6 }}>
@@ -369,10 +394,55 @@ export default function Students() {
         ))}
       </Grid>
 
+      <Box
+        sx={{
+          mb: 4,
+          p: 3,
+          borderRadius: 3,
+          background: "#fff",
+          boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
+        }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          Occupancy
+        </Typography>
+
+        <Typography variant="h6" fontWeight={700} mb={2}>
+          {occupancyPercentage}% Occupied
+        </Typography>
+
+        <Box
+          sx={{
+            height: 10,
+            borderRadius: 5,
+            backgroundColor: "#e5e7eb",
+            overflow: "hidden",
+          }}
+        >
+          <Box
+            sx={{
+              width: `${occupancyPercentage}%`,
+              height: "100%",
+              background:
+                occupancyPercentage > 80
+                  ? "#10b981"
+                  : occupancyPercentage > 50
+                    ? "#f59e0b"
+                    : "#ef4444",
+              transition: "width 0.5s ease",
+            }}
+          />
+        </Box>
+
+        <Typography variant="caption" color="text.secondary">
+          {totalOccupied} of {totalSeats} seats filled
+        </Typography>
+      </Box>
+
       {/* -------- Table -------- */}
       {isMobile ? (
         <Box display="flex" flexDirection="column" gap={2}>
-          {filteredStudents.map((student) => {
+          {sortedStudents.map((student) => {
             const due = student.monthlyFee - student.paidAmount;
 
             return (
@@ -444,10 +514,44 @@ export default function Students() {
           <Table>
             <TableHead sx={{ backgroundColor: "#fafafa" }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
+                <TableCell
+                  sortDirection={orderBy === "name" ? order : false}
+                  sx={{ fontWeight: 600 }}
+                >
+                  <TableSortLabel
+                    active={orderBy === "name"}
+                    direction={orderBy === "name" ? order : "asc"}
+                    onClick={() => handleSort("name")}
+                  >
+                    Name
+                  </TableSortLabel>
+                </TableCell>
+
                 <TableCell sx={{ fontWeight: 600 }}>Room</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Fee</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Paid</TableCell>
+                <TableCell
+                  sortDirection={orderBy === "monthlyFee" ? order : false}
+                  sx={{ fontWeight: 600 }}
+                >
+                  <TableSortLabel
+                    active={orderBy === "monthlyFee"}
+                    direction={orderBy === "monthlyFee" ? order : "asc"}
+                    onClick={() => handleSort("monthlyFee")}
+                  >
+                    Fee
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell
+                  sortDirection={orderBy === "paidAmount" ? order : false}
+                  sx={{ fontWeight: 600 }}
+                >
+                  <TableSortLabel
+                    active={orderBy === "paidAmount"}
+                    direction={orderBy === "paidAmount" ? order : "asc"}
+                    onClick={() => handleSort("paidAmount")}
+                  >
+                    Paid
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Due</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 600 }}>
