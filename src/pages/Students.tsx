@@ -9,6 +9,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   IconButton,
   MenuItem,
   Table,
@@ -24,7 +25,12 @@ import {
 import Grid from "@mui/material/Grid";
 import Menu from "@mui/material/Menu";
 import { useState } from "react";
-import { sendWhatsAppBill } from "../utils/helpers";
+import { sendWhatsAppBill } from "../shared/helpers";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import Tooltip from "@mui/material/Tooltip";
 
 interface Student {
   id: number;
@@ -45,6 +51,7 @@ export default function Students() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const openMenu = Boolean(anchorEl);
   /* -------- States -------- */
@@ -398,12 +405,14 @@ export default function Students() {
                     />
                   </Box>
 
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, student)}
-                  >
-                    <MoreVertIcon fontSize="small" />
-                  </IconButton>
+                  <Tooltip title="Actions">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, student)}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
 
                 <Typography variant="body2">
@@ -573,7 +582,6 @@ export default function Students() {
         anchorEl={anchorEl}
         open={openMenu}
         onClose={handleMenuClose}
-        disableScrollLock
         anchorOrigin={{
           vertical: "bottom",
           horizontal: "right",
@@ -585,8 +593,9 @@ export default function Students() {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            minWidth: 180,
-            boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+            minWidth: 220,
+            boxShadow: "0 15px 40px rgba(0,0,0,0.12)",
+            p: 1,
           },
         }}
       >
@@ -605,7 +614,9 @@ export default function Students() {
                   );
                   handleMenuClose();
                 }}
+                sx={{ borderRadius: 2 }}
               >
+                <CheckCircleOutlineIcon fontSize="small" sx={{ mr: 1 }} />
                 Mark as Paid
               </MenuItem>
             )}
@@ -624,7 +635,9 @@ export default function Students() {
                 setOpen(true);
                 handleMenuClose();
               }}
+              sx={{ borderRadius: 2 }}
             >
+              <EditOutlinedIcon fontSize="small" sx={{ mr: 1 }} />
               Edit
             </MenuItem>
 
@@ -639,23 +652,52 @@ export default function Students() {
                 });
                 handleMenuClose();
               }}
+              sx={{ borderRadius: 2 }}
             >
+              <WhatsAppIcon fontSize="small" sx={{ mr: 1, color: "#25D366" }} />
               Send WhatsApp Bill
             </MenuItem>
+
+            <Divider sx={{ my: 1 }} />
 
             {/* Delete */}
             <MenuItem
               onClick={() => {
-                handleDelete(selectedStudent.id);
+                setConfirmDelete(true);
                 handleMenuClose();
               }}
-              sx={{ color: "error.main" }}
+              sx={{
+                borderRadius: 2,
+                color: "error.main",
+              }}
             >
+              <DeleteOutlineIcon fontSize="small" sx={{ mr: 1 }} />
               Delete
             </MenuItem>
           </>
         )}
       </Menu>
+      <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this student?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDelete(false)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              if (selectedStudent) {
+                handleDelete(selectedStudent.id);
+              }
+              setConfirmDelete(false);
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
