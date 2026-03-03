@@ -4,6 +4,14 @@ import PeopleIcon from "@mui/icons-material/People";
 import BedIcon from "@mui/icons-material/Bed";
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom";
 import PaymentsIcon from "@mui/icons-material/Payments";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+
+const revenueData = [
+  { name: "Collected", value: 95000 },
+  { name: "Due", value: 40000 },
+];
+
+const COLORS = ["#10b981", "#ef4444"];
 
 const stats = [
   {
@@ -81,6 +89,37 @@ export default function Dashboard() {
           </Grid>
         ))}
       </Grid>
+      <Box
+        sx={{
+          mt: 4,
+          p: 3,
+          borderRadius: 4,
+          backgroundColor: "#ffffff",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+        }}
+      >
+        <Typography variant="h6" fontWeight={600} mb={2}>
+          Revenue Breakdown
+        </Typography>
+
+        <Box sx={{ width: "100%", height: 300 }}>
+          <ResponsiveContainer>
+            <PieChart>
+              <Pie
+                data={revenueData}
+                dataKey="value"
+                nameKey="name"
+                outerRadius={100}
+              >
+                {revenueData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </Box>
+      </Box>
     </>
   );
 }

@@ -16,12 +16,18 @@ import {
   IconButton,
   MenuItem,
   Alert,
+  useTheme,
+  useMediaQuery,
+  Stack,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import Grid from "@mui/material/Grid";
 import { useState } from "react";
+import { sendWhatsAppBill } from "../utils/helpers";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import Menu from "@mui/material/Menu";
 
 interface Student {
   id: number;
@@ -38,6 +44,12 @@ const SINGLE_TOTAL_SEATS = 10;
 const DOUBLE_TOTAL_SEATS = 14;
 
 export default function Students() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
+  const openMenu = Boolean(anchorEl);
   /* -------- States -------- */
 
   const [students, setStudents] = useState<Student[]>([
@@ -200,6 +212,19 @@ export default function Students() {
     setStudents(students.filter((student) => student.id !== id));
   };
 
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    student: Student,
+  ) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedStudent(student);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedStudent(null);
+  };
+
   return (
     <Box sx={{ maxWidth: 1200, mx: "auto", pb: 6 }}>
       {/* -------- Header -------- */}
@@ -341,97 +366,143 @@ export default function Students() {
       </Grid>
 
       {/* -------- Table -------- */}
+      {isMobile ? (
+        <Box display="flex" flexDirection="column" gap={2}>
+          {filteredStudents.map((student) => {
+            const due = student.monthlyFee - student.paidAmount;
 
-      <Box
-        sx={{
-          borderRadius: 4,
-          backgroundColor: "#ffffff",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
-          overflow: "hidden",
-        }}
-      >
-        <Table>
-          <TableHead sx={{ backgroundColor: "#fafafa" }}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Room</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Fee</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Paid</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Due</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 600 }}>
-                Action
-              </TableCell>
-            </TableRow>
-          </TableHead>
-
-          <TableBody>
-            {filteredStudents.map((student) => {
-              const due = student.monthlyFee - student.paidAmount;
-
-              return (
-                <TableRow
-                  key={student.id}
-                  hover
+            return (
+              <Box
+                key={student.id}
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  background: "#ffffff",
+                  boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
+                  transition: "0.2s",
+                  "&:hover": {
+                    transform: "translateY(-3px)",
+                  },
+                }}
+              >
+                <Box
                   sx={{
-                    "&:hover": { backgroundColor: "#f8fafc" },
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                   }}
                 >
-                  <TableCell>{student.name}</TableCell>
-
-                  <TableCell>
-                    <Chip
-                      label={student.roomType}
-                      size="small"
-                      color={
-                        student.roomType === "Single" ? "primary" : "secondary"
-                      }
-                    />
-                  </TableCell>
-
-                  <TableCell>₹{student.monthlyFee}</TableCell>
-                  <TableCell>₹{student.paidAmount}</TableCell>
-                  <TableCell>₹{due}</TableCell>
-
-                  <TableCell>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography fontWeight={600}>{student.name}</Typography>
                     <Chip
                       label={due === 0 ? "Paid" : "Due"}
                       size="small"
                       color={due === 0 ? "success" : "error"}
                     />
-                  </TableCell>
+                  </Box>
 
-                  <TableCell align="center">
-                    <IconButton
-                      color="primary"
-                      onClick={() => {
-                        setEditingId(student.id);
-                        setFormData({
-                          name: student.name,
-                          phone: student.phone,
-                          roomType: student.roomType,
-                          monthlyFee: student.monthlyFee.toString(),
-                          paidAmount: student.paidAmount.toString(),
-                        });
-                        setOpen(true);
-                      }}
-                    >
-                      <EditIcon />
-                    </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleMenuOpen(e, student)}
+                  >
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
+                </Box>
 
-                    <IconButton
-                      color="error"
-                      onClick={() => handleDelete(student.id)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Box>
+                <Typography variant="body2">
+                  Room: {student.roomType}
+                </Typography>
+
+                <Typography variant="body2">
+                  Fee: ₹{student.monthlyFee}
+                </Typography>
+
+                <Typography variant="body2">
+                  Paid: ₹{student.paidAmount}
+                </Typography>
+
+                <Typography variant="body2">Due: ₹{due}</Typography>
+              </Box>
+            );
+          })}
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            borderRadius: 4,
+            backgroundColor: "#ffffff",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+            overflow: "hidden",
+          }}
+        >
+          <Table>
+            <TableHead sx={{ backgroundColor: "#fafafa" }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Room</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Fee</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Paid</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Due</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600 }}>
+                  Action
+                </TableCell>
+              </TableRow>
+            </TableHead>
+
+            <TableBody>
+              {filteredStudents.map((student) => {
+                const due = student.monthlyFee - student.paidAmount;
+
+                return (
+                  <TableRow
+                    key={student.id}
+                    hover
+                    sx={{
+                      backgroundColor: due > 0 ? "#fff7ed" : "inherit",
+                      "&:hover": {
+                        backgroundColor: due > 0 ? "#ffedd5" : "#f8fafc",
+                      },
+                    }}
+                  >
+                    <TableCell>{student.name}</TableCell>
+
+                    <TableCell>
+                      <Chip
+                        label={student.roomType}
+                        size="small"
+                        color={
+                          student.roomType === "Single"
+                            ? "primary"
+                            : "secondary"
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>₹{student.monthlyFee}</TableCell>
+                    <TableCell>₹{student.paidAmount}</TableCell>
+                    <TableCell>₹{due}</TableCell>
+
+                    <TableCell>
+                      <Chip
+                        label={due === 0 ? "Paid" : "Due"}
+                        size="small"
+                        color={due === 0 ? "success" : "error"}
+                      />
+                    </TableCell>
+
+                    <TableCell align="center">
+                      <IconButton onClick={(e) => handleMenuOpen(e, student)}>
+                        <MoreVertIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Box>
+      )}
 
       {/* -------- Dialog -------- */}
 
@@ -500,6 +571,94 @@ export default function Students() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={openMenu}
+        onClose={handleMenuClose}
+        disableScrollLock
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            minWidth: 180,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+          },
+        }}
+      >
+        {selectedStudent && (
+          <>
+            {/* Mark Paid */}
+            {selectedStudent.monthlyFee - selectedStudent.paidAmount > 0 && (
+              <MenuItem
+                onClick={() => {
+                  setStudents((prev) =>
+                    prev.map((s) =>
+                      s.id === selectedStudent.id
+                        ? { ...s, paidAmount: s.monthlyFee }
+                        : s,
+                    ),
+                  );
+                  handleMenuClose();
+                }}
+              >
+                Mark as Paid
+              </MenuItem>
+            )}
+
+            {/* Edit */}
+            <MenuItem
+              onClick={() => {
+                setEditingId(selectedStudent.id);
+                setFormData({
+                  name: selectedStudent.name,
+                  phone: selectedStudent.phone,
+                  roomType: selectedStudent.roomType,
+                  monthlyFee: selectedStudent.monthlyFee.toString(),
+                  paidAmount: selectedStudent.paidAmount.toString(),
+                });
+                setOpen(true);
+                handleMenuClose();
+              }}
+            >
+              Edit
+            </MenuItem>
+
+            {/* WhatsApp */}
+            <MenuItem
+              onClick={() => {
+                sendWhatsAppBill({
+                  name: selectedStudent.name,
+                  phone: selectedStudent.phone,
+                  monthlyFee: selectedStudent.monthlyFee,
+                  paidAmount: selectedStudent.paidAmount,
+                });
+                handleMenuClose();
+              }}
+            >
+              Send WhatsApp Bill
+            </MenuItem>
+
+            {/* Delete */}
+            <MenuItem
+              onClick={() => {
+                handleDelete(selectedStudent.id);
+                handleMenuClose();
+              }}
+              sx={{ color: "error.main" }}
+            >
+              Delete
+            </MenuItem>
+          </>
+        )}
+      </Menu>
     </Box>
   );
 }
