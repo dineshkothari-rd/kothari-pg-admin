@@ -1,3 +1,5 @@
+import type { Student } from "./types";
+
 export interface BillData {
   name: string;
   phone: string;
@@ -34,4 +36,28 @@ Thank you.
   )}`;
 
   window.open(url, "_blank");
+};
+
+export const currentMonth = new Date().getMonth() + 1;
+export const currentYear = new Date().getFullYear();
+
+export const getCurrentMonthPaid = (student: Student) => {
+  const payment = student.payments.find(
+    (p) => p.month === currentMonth && p.year === currentYear,
+  );
+
+  return payment ? payment.amountPaid : 0;
+};
+
+export const getPaymentProgress = (student: Student) => {
+  const paid = getCurrentMonthPaid(student);
+  return (paid / student.monthlyFee) * 100;
+};
+
+export const formatPaymentDate = (date: string) => {
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };

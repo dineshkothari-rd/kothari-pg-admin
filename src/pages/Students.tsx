@@ -12,6 +12,7 @@ import {
   Divider,
   IconButton,
   MenuItem,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -25,7 +26,14 @@ import {
 import Grid from "@mui/material/Grid";
 import Menu from "@mui/material/Menu";
 import { useState } from "react";
-import { sendWhatsAppBill } from "../shared/helpers";
+import {
+  currentMonth,
+  currentYear,
+  formatPaymentDate,
+  getCurrentMonthPaid,
+  getPaymentProgress,
+  sendWhatsAppBill,
+} from "../shared/helpers";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
@@ -34,37 +42,7 @@ import Tooltip from "@mui/material/Tooltip";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import CountUp from "react-countup";
 import { Drawer } from "@mui/material";
-
-type Payment = {
-  id: string;
-  month: number;
-  year: number;
-  amountPaid: number;
-  date: string;
-  mode: "Cash" | "UPI" | "Bank";
-};
-
-interface Student {
-  id: number;
-  name: string;
-  phone: string;
-  roomType: string;
-  monthlyFee: number;
-  payments: Payment[];
-}
-
-type SortField = "name" | "monthlyFee" | "paid" | "due";
-
-const currentMonth = new Date().getMonth() + 1;
-const currentYear = new Date().getFullYear();
-
-const getCurrentMonthPaid = (student: Student) => {
-  const payment = student.payments.find(
-    (p) => p.month === currentMonth && p.year === currentYear,
-  );
-
-  return payment ? payment.amountPaid : 0;
-};
+import type { Payment, SortField, Student } from "../shared/types";
 
 /* -------- PG Capacity -------- */
 
@@ -81,6 +59,10 @@ export default function Students() {
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [openDrawer, setOpenDrawer] = useState(false);
   const [drawerStudent, setDrawerStudent] = useState<Student | null>(null);
+  const [openPaymentModal, setOpenPaymentModal] = useState(false);
+
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMode, setPaymentMode] = useState("Cash");
 
   const openMenu = Boolean(anchorEl);
   /* -------- States -------- */
@@ -213,18 +195,33 @@ export default function Students() {
 
     if (editingId) {
       setStudents((prev) =>
-        prev.map((student) =>
-          student.id === editingId
-            ? {
-                ...student,
-                name: formData.name,
-                phone: formData.phone,
-                roomType: formData.roomType,
-                monthlyFee,
-                paidAmount,
-              }
-            : student,
-        ),
+        prev.map((student) => {
+          if (student.id !== editingId) return student;
+
+          let updatedPayments = student.payments;
+
+          if (paidAmount > 0) {
+            updatedPayments = [
+              {
+                id: crypto.randomUUID(),
+                month: currentMonth,
+                year: currentYear,
+                amountPaid: paidAmount,
+                date: new Date().toISOString(),
+                mode: "Cash",
+              },
+            ];
+          }
+
+          return {
+            ...student,
+            name: formData.name,
+            phone: formData.phone,
+            roomType: formData.roomType,
+            monthlyFee,
+            payments: updatedPayments,
+          };
+        }),
       );
     } else {
       if (
@@ -278,7 +275,12 @@ export default function Students() {
   };
 
   const handleDelete = (id: number) => {
-    setStudents(students.filter((student) => student.id !== id));
+    setStudents((prev) => prev.filter((student) => student.id !== id));
+
+    if (drawerStudent?.id === id) {
+      setDrawerStudent(null);
+      setOpenDrawer(false);
+    }
   };
 
   const handleMenuOpen = (
@@ -335,27 +337,41 @@ export default function Students() {
       : String(bValue).localeCompare(String(aValue));
   });
 
-  const handleMarkPaid = (student: Student) => {
-    const alreadyPaid = student.payments.find(
-      (p) => p.month === currentMonth && p.year === currentYear,
-    );
-
-    if (alreadyPaid) return;
-
-    const payment: Payment = {
-      id: crypto.randomUUID(),
-      month: currentMonth,
-      year: currentYear,
-      amountPaid: student.monthlyFee,
-      date: new Date().toISOString(),
-      mode: "Cash",
-    };
+  const handleMarkPaid = (studentId: number) => {
+    let newPayment: Payment | null = null;
 
     setStudents((prev) =>
-      prev.map((s) =>
-        s.id === student.id ? { ...s, payments: [...s.payments, payment] } : s,
-      ),
+      prev.map((s) => {
+        if (s.id !== studentId) return s;
+
+        const paid = getCurrentMonthPaid(s);
+        const remaining = s.monthlyFee - paid;
+
+        if (remaining <= 0) return s;
+
+        newPayment = {
+          id: crypto.randomUUID(),
+          month: currentMonth,
+          year: currentYear,
+          amountPaid: remaining,
+          date: new Date().toISOString(),
+          mode: "Cash",
+        };
+
+        return {
+          ...s,
+          payments: [...s.payments, newPayment],
+        };
+      }),
     );
+
+    if (newPayment) {
+      setDrawerStudent((prev) =>
+        prev && prev.id === studentId
+          ? { ...prev, payments: [...prev.payments, newPayment!] }
+          : prev,
+      );
+    }
   };
 
   return (
@@ -669,7 +685,7 @@ export default function Students() {
             </TableHead>
 
             <TableBody>
-              {filteredStudents.map((student) => {
+              {sortedStudents.map((student) => {
                 const due = student.monthlyFee - getCurrentMonthPaid(student);
 
                 return (
@@ -829,7 +845,7 @@ export default function Students() {
               0 && (
               <MenuItem
                 onClick={() => {
-                  handleMarkPaid(selectedStudent);
+                  handleMarkPaid(selectedStudent.id);
                   handleMenuClose();
                 }}
                 sx={{ borderRadius: 2 }}
@@ -922,7 +938,7 @@ export default function Students() {
         onClose={() => setOpenDrawer(false)}
         PaperProps={{
           sx: {
-            width: { xs: "100%", sm: 400 },
+            width: { xs: "100%", sm: "50%" },
             top: "64px",
             height: "calc(100% - 64px)",
             borderTopLeftRadius: 16,
@@ -995,9 +1011,28 @@ export default function Students() {
               <Typography variant="body2" color="text.secondary">
                 Paid
               </Typography>
-              <Typography fontWeight={600}>
-                ₹{getCurrentMonthPaid(drawerStudent)}
-              </Typography>
+
+              {drawerStudent.payments
+                .slice()
+                .reverse()
+                .map((p) => (
+                  <Box
+                    key={p.id}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <Typography variant="body2" fontWeight={600}>
+                      ₹{p.amountPaid}
+                    </Typography>
+
+                    <Typography variant="caption" color="text.secondary">
+                      {p.mode} • {formatPaymentDate(p.date)}
+                    </Typography>
+                  </Box>
+                ))}
 
               <Typography variant="body2" color="text.secondary">
                 Due
@@ -1018,76 +1053,117 @@ export default function Students() {
 
             <Divider sx={{ mb: 2 }} />
 
-            <Typography variant="subtitle2" mb={2}>
-              Payment History
-            </Typography>
-
-            <Box
-              sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}
-            >
-              {drawerStudent.payments
-                .slice()
-                .reverse()
-                .map((p) => (
-                  <Box
-                    key={p.id}
-                    sx={{
-                      display: "flex",
-                      gap: 2,
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    {/* timeline dot */}
-                    <Box
-                      sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: "#6366f1",
-                        mt: "6px",
-                      }}
-                    />
-
-                    {/* payment card */}
-                    <Box>
-                      <Typography fontWeight={600}>
-                        {p.month}/{p.year}
-                      </Typography>
-
-                      <Typography variant="body2">
-                        ₹{p.amountPaid} Paid
-                      </Typography>
-
-                      <Typography variant="caption" color="text.secondary">
-                        via {p.mode}
-                      </Typography>
-                    </Box>
-                  </Box>
-                ))}
-            </Box>
-
-            <Divider sx={{ mb: 3 }} />
-
             <Box sx={{ mb: 3 }}>
-              <Chip
-                label={
-                  drawerStudent.monthlyFee -
-                    getCurrentMonthPaid(drawerStudent) ===
-                  0
-                    ? "Fully Paid"
-                    : "Payment Due"
-                }
-                color={
-                  drawerStudent.monthlyFee -
-                    getCurrentMonthPaid(drawerStudent) ===
-                  0
-                    ? "success"
-                    : "error"
-                }
-              />
+              <Stack direction="row" alignItems="center" gap={1}>
+                <Typography variant="body2" color="text.secondary">
+                  Payment Progress{" "}
+                </Typography>
+                <Chip
+                  size="small"
+                  label={
+                    drawerStudent.monthlyFee -
+                      getCurrentMonthPaid(drawerStudent) ===
+                    0
+                      ? "Fully Paid"
+                      : "Payment Due"
+                  }
+                  color={
+                    drawerStudent.monthlyFee -
+                      getCurrentMonthPaid(drawerStudent) ===
+                    0
+                      ? "success"
+                      : "error"
+                  }
+                />
+              </Stack>
+
+              <Box
+                sx={{
+                  mt: 1,
+                  height: 8,
+                  borderRadius: 5,
+                  background: "#e5e7eb",
+                  overflow: "hidden",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: `${getPaymentProgress(drawerStudent)}%`,
+                    height: "100%",
+                    background:
+                      getPaymentProgress(drawerStudent) === 100
+                        ? "#10b981"
+                        : "#6366f1",
+                    transition: "width 0.4s",
+                  }}
+                />
+              </Box>
+
+              <Typography variant="caption" color="text.secondary">
+                ₹{getCurrentMonthPaid(drawerStudent)} / ₹
+                {drawerStudent.monthlyFee}
+              </Typography>
             </Box>
 
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box sx={{ mt: 3 }}>
+              {drawerStudent.monthlyFee - getCurrentMonthPaid(drawerStudent) >
+                0 && (
+                <>
+                  <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      onClick={() => setOpenPaymentModal(true)}
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: "none",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Add Payment
+                    </Button>
+
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      onClick={() => {
+                        handleMarkPaid(drawerStudent.id);
+                        setDrawerStudent(null);
+                        setOpenDrawer(false);
+                      }}
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: "none",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Mark Paid
+                    </Button>
+                  </Box>
+                  <Button
+                    startIcon={<WhatsAppIcon />}
+                    fullWidth
+                    sx={{
+                      mb: 3,
+                      borderRadius: 2,
+                      textTransform: "none",
+                      background: "#25D366",
+                      "&:hover": { background: "#1ebe5d" },
+                    }}
+                    variant="contained"
+                    onClick={() =>
+                      sendWhatsAppBill({
+                        name: drawerStudent.name,
+                        phone: drawerStudent.phone,
+                        monthlyFee: drawerStudent.monthlyFee,
+                        paidAmount: getCurrentMonthPaid(drawerStudent),
+                      })
+                    }
+                  >
+                    Send WhatsApp Reminder
+                  </Button>
+                </>
+              )}
               <Button
                 variant="contained"
                 fullWidth
@@ -1098,31 +1174,77 @@ export default function Students() {
               >
                 Close
               </Button>
-              {!(
-                drawerStudent.monthlyFee -
-                  getCurrentMonthPaid(drawerStudent) ===
-                0
-              ) && (
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => {
-                    if (!drawerStudent) return;
-
-                    handleMarkPaid(drawerStudent);
-
-                    setDrawerStudent((prev) =>
-                      prev ? { ...prev, paidAmount: prev.monthlyFee } : null,
-                    );
-                  }}
-                >
-                  Mark Paid
-                </Button>
-              )}
             </Box>
           </Box>
         )}
       </Drawer>
+      <Dialog
+        open={openPaymentModal}
+        onClose={() => setOpenPaymentModal(false)}
+      >
+        <DialogTitle>Add Payment</DialogTitle>
+
+        <DialogContent
+          sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
+        >
+          <TextField
+            label="Amount"
+            type="number"
+            value={paymentAmount}
+            onChange={(e) => setPaymentAmount(e.target.value)}
+          />
+
+          <TextField
+            select
+            label="Payment Mode"
+            value={paymentMode}
+            onChange={(e) => setPaymentMode(e.target.value)}
+          >
+            <MenuItem value="Cash">Cash</MenuItem>
+            <MenuItem value="UPI">UPI</MenuItem>
+            <MenuItem value="Bank">Bank</MenuItem>
+          </TextField>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setOpenPaymentModal(false)}>Cancel</Button>
+
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (!drawerStudent) return;
+
+              const newPayment: Payment = {
+                id: crypto.randomUUID(),
+                month: currentMonth,
+                year: currentYear,
+                amountPaid: Number(paymentAmount),
+                date: new Date().toISOString(),
+                mode: paymentMode as "Cash" | "UPI" | "Bank",
+              };
+
+              setStudents((prev) =>
+                prev.map((s) =>
+                  s.id === drawerStudent.id
+                    ? { ...s, payments: [...s.payments, newPayment] }
+                    : s,
+                ),
+              );
+
+              setDrawerStudent((prev) =>
+                prev
+                  ? { ...prev, payments: [...prev.payments, newPayment] }
+                  : prev,
+              );
+
+              setPaymentAmount("");
+              setOpenPaymentModal(false);
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
