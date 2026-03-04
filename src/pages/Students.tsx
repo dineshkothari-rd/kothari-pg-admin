@@ -32,6 +32,17 @@ import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import Tooltip from "@mui/material/Tooltip";
 import TableSortLabel from "@mui/material/TableSortLabel";
+import CountUp from "react-countup";
+import { Drawer } from "@mui/material";
+
+type Payment = {
+  id: string;
+  month: number;
+  year: number;
+  amountPaid: number;
+  date: string;
+  mode: "Cash" | "UPI" | "Bank";
+};
 
 interface Student {
   id: number;
@@ -39,8 +50,21 @@ interface Student {
   phone: string;
   roomType: string;
   monthlyFee: number;
-  paidAmount: number;
+  payments: Payment[];
 }
+
+type SortField = "name" | "monthlyFee" | "paid" | "due";
+
+const currentMonth = new Date().getMonth() + 1;
+const currentYear = new Date().getFullYear();
+
+const getCurrentMonthPaid = (student: Student) => {
+  const payment = student.payments.find(
+    (p) => p.month === currentMonth && p.year === currentYear,
+  );
+
+  return payment ? payment.amountPaid : 0;
+};
 
 /* -------- PG Capacity -------- */
 
@@ -53,8 +77,10 @@ export default function Students() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [orderBy, setOrderBy] = useState<keyof Student>("name");
+  const [orderBy, setOrderBy] = useState<SortField>("name");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [openDrawer, setOpenDrawer] = useState(false);
+  const [drawerStudent, setDrawerStudent] = useState<Student | null>(null);
 
   const openMenu = Boolean(anchorEl);
   /* -------- States -------- */
@@ -66,7 +92,16 @@ export default function Students() {
       phone: "9876543210",
       roomType: "Single",
       monthlyFee: 7500,
-      paidAmount: 7500,
+      payments: [
+        {
+          id: "p1",
+          month: currentMonth,
+          year: currentYear,
+          amountPaid: 7500,
+          date: new Date().toISOString(),
+          mode: "UPI",
+        },
+      ],
     },
     {
       id: 2,
@@ -74,7 +109,16 @@ export default function Students() {
       phone: "9123456780",
       roomType: "Double",
       monthlyFee: 6500,
-      paidAmount: 4000,
+      payments: [
+        {
+          id: "p2",
+          month: currentMonth,
+          year: currentYear,
+          amountPaid: 4000,
+          date: new Date().toISOString(),
+          mode: "Cash",
+        },
+      ],
     },
     {
       id: 3,
@@ -82,7 +126,7 @@ export default function Students() {
       phone: "9988776655",
       roomType: "Single",
       monthlyFee: 7500,
-      paidAmount: 0,
+      payments: [],
     },
   ]);
 
@@ -121,14 +165,18 @@ export default function Students() {
 
   const totalRevenue = students.reduce((sum, s) => sum + s.monthlyFee, 0);
 
-  const totalCollected = students.reduce((sum, s) => sum + s.paidAmount, 0);
+  const totalCollected = students.reduce(
+    (sum, s) => sum + getCurrentMonthPaid(s),
+    0,
+  );
 
   const totalDue = totalRevenue - totalCollected;
 
   /* -------- Filtering -------- */
 
   const filteredStudents = students.filter((student) => {
-    const due = student.monthlyFee - student.paidAmount;
+    const paid = getCurrentMonthPaid(student);
+    const due = student.monthlyFee - paid;
 
     const matchesSearch =
       student.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -201,7 +249,18 @@ export default function Students() {
         phone: formData.phone,
         roomType: formData.roomType,
         monthlyFee,
-        paidAmount,
+        payments: paidAmount
+          ? [
+              {
+                id: crypto.randomUUID(),
+                month: currentMonth,
+                year: currentYear,
+                amountPaid: paidAmount,
+                date: new Date().toISOString(),
+                mode: "Cash",
+              },
+            ]
+          : [],
       };
 
       setStudents([...students, newStudent]);
@@ -235,15 +294,37 @@ export default function Students() {
     setSelectedStudent(null);
   };
 
-  const handleSort = (property: keyof Student) => {
+  const handleSort = (property: SortField) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
   };
 
   const sortedStudents = [...filteredStudents].sort((a, b) => {
-    const aValue = a[orderBy];
-    const bValue = b[orderBy];
+    const getValue = (student: Student) => {
+      const paid = getCurrentMonthPaid(student);
+      const due = student.monthlyFee - paid;
+
+      switch (orderBy) {
+        case "name":
+          return student.name;
+
+        case "monthlyFee":
+          return student.monthlyFee;
+
+        case "paid":
+          return paid;
+
+        case "due":
+          return due;
+
+        default:
+          return student.name;
+      }
+    };
+
+    const aValue = getValue(a);
+    const bValue = getValue(b);
 
     if (typeof aValue === "number" && typeof bValue === "number") {
       return order === "asc" ? aValue - bValue : bValue - aValue;
@@ -253,6 +334,29 @@ export default function Students() {
       ? String(aValue).localeCompare(String(bValue))
       : String(bValue).localeCompare(String(aValue));
   });
+
+  const handleMarkPaid = (student: Student) => {
+    const alreadyPaid = student.payments.find(
+      (p) => p.month === currentMonth && p.year === currentYear,
+    );
+
+    if (alreadyPaid) return;
+
+    const payment: Payment = {
+      id: crypto.randomUUID(),
+      month: currentMonth,
+      year: currentYear,
+      amountPaid: student.monthlyFee,
+      date: new Date().toISOString(),
+      mode: "Cash",
+    };
+
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.id === student.id ? { ...s, payments: [...s.payments, payment] } : s,
+      ),
+    );
+  };
 
   return (
     <Box sx={{ maxWidth: 1200, mx: "auto", pb: 6 }}>
@@ -366,8 +470,8 @@ export default function Students() {
         {[
           { label: "Students", value: totalStudents },
           { label: "Vacant Seats", value: totalVacant },
-          { label: "Revenue", value: `₹${totalRevenue}` },
-          { label: "Due", value: `₹${totalDue}` },
+          { label: "Revenue", value: totalRevenue, prefix: "₹" },
+          { label: "Due", value: totalDue, prefix: "₹" },
         ].map((item, i) => (
           <Grid key={i} size={{ xs: 12, sm: 6, md: 3 }}>
             <Box
@@ -387,7 +491,11 @@ export default function Students() {
                 {item.label}
               </Typography>
               <Typography variant="h6" fontWeight={700} mt={1}>
-                {item.value}
+                <CountUp
+                  end={item.value}
+                  duration={1.2}
+                  prefix={item.prefix || ""}
+                />
               </Typography>
             </Box>
           </Grid>
@@ -443,7 +551,7 @@ export default function Students() {
       {isMobile ? (
         <Box display="flex" flexDirection="column" gap={2}>
           {sortedStudents.map((student) => {
-            const due = student.monthlyFee - student.paidAmount;
+            const due = student.monthlyFee - getCurrentMonthPaid(student);
 
             return (
               <Box
@@ -494,7 +602,7 @@ export default function Students() {
                 </Typography>
 
                 <Typography variant="body2">
-                  Paid: ₹{student.paidAmount}
+                  Paid: ₹{getCurrentMonthPaid(student)}
                 </Typography>
 
                 <Typography variant="body2">Due: ₹{due}</Typography>
@@ -541,13 +649,13 @@ export default function Students() {
                   </TableSortLabel>
                 </TableCell>
                 <TableCell
-                  sortDirection={orderBy === "paidAmount" ? order : false}
+                  sortDirection={orderBy === "paid" ? order : false}
                   sx={{ fontWeight: 600 }}
                 >
                   <TableSortLabel
-                    active={orderBy === "paidAmount"}
-                    direction={orderBy === "paidAmount" ? order : "asc"}
-                    onClick={() => handleSort("paidAmount")}
+                    active={orderBy === "paid"}
+                    direction={orderBy === "paid" ? order : "asc"}
+                    onClick={() => handleSort("paid")}
                   >
                     Paid
                   </TableSortLabel>
@@ -562,7 +670,7 @@ export default function Students() {
 
             <TableBody>
               {filteredStudents.map((student) => {
-                const due = student.monthlyFee - student.paidAmount;
+                const due = student.monthlyFee - getCurrentMonthPaid(student);
 
                 return (
                   <TableRow
@@ -575,7 +683,18 @@ export default function Students() {
                       },
                     }}
                   >
-                    <TableCell>{student.name}</TableCell>
+                    <TableCell
+                      sx={{
+                        cursor: "pointer",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDrawerStudent(student);
+                        setOpenDrawer(true);
+                      }}
+                    >
+                      {student.name}
+                    </TableCell>
 
                     <TableCell>
                       <Chip
@@ -590,7 +709,7 @@ export default function Students() {
                     </TableCell>
 
                     <TableCell>₹{student.monthlyFee}</TableCell>
-                    <TableCell>₹{student.paidAmount}</TableCell>
+                    <TableCell>₹{getCurrentMonthPaid(student)}</TableCell>
                     <TableCell>₹{due}</TableCell>
 
                     <TableCell>
@@ -706,16 +825,11 @@ export default function Students() {
         {selectedStudent && (
           <>
             {/* Mark Paid */}
-            {selectedStudent.monthlyFee - selectedStudent.paidAmount > 0 && (
+            {selectedStudent.monthlyFee - getCurrentMonthPaid(selectedStudent) >
+              0 && (
               <MenuItem
                 onClick={() => {
-                  setStudents((prev) =>
-                    prev.map((s) =>
-                      s.id === selectedStudent.id
-                        ? { ...s, paidAmount: s.monthlyFee }
-                        : s,
-                    ),
-                  );
+                  handleMarkPaid(selectedStudent);
                   handleMenuClose();
                 }}
                 sx={{ borderRadius: 2 }}
@@ -734,7 +848,7 @@ export default function Students() {
                   phone: selectedStudent.phone,
                   roomType: selectedStudent.roomType,
                   monthlyFee: selectedStudent.monthlyFee.toString(),
-                  paidAmount: selectedStudent.paidAmount.toString(),
+                  paidAmount: getCurrentMonthPaid(selectedStudent).toString(),
                 });
                 setOpen(true);
                 handleMenuClose();
@@ -752,7 +866,7 @@ export default function Students() {
                   name: selectedStudent.name,
                   phone: selectedStudent.phone,
                   monthlyFee: selectedStudent.monthlyFee,
-                  paidAmount: selectedStudent.paidAmount,
+                  paidAmount: getCurrentMonthPaid(selectedStudent),
                 });
                 handleMenuClose();
               }}
@@ -802,6 +916,213 @@ export default function Students() {
           </Button>
         </DialogActions>
       </Dialog>
+      <Drawer
+        anchor="right"
+        open={openDrawer}
+        onClose={() => setOpenDrawer(false)}
+        PaperProps={{
+          sx: {
+            width: { xs: "100%", sm: 400 },
+            top: "64px",
+            height: "calc(100% - 64px)",
+            borderTopLeftRadius: 16,
+            borderBottomLeftRadius: 16,
+          },
+        }}
+      >
+        {drawerStudent && (
+          <Box sx={{ p: 3 }}>
+            {/* Header */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                mb: 3,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: "50%",
+                  background: "#6366f1",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 600,
+                  fontSize: 20,
+                }}
+              >
+                {drawerStudent.name.charAt(0)}
+              </Box>
+
+              <Box>
+                <Typography variant="h6" fontWeight={700}>
+                  {drawerStudent.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {drawerStudent.phone}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Divider sx={{ mb: 3 }} />
+
+            {/* Info Grid */}
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                rowGap: 2,
+                columnGap: 2,
+                mb: 3,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Room
+              </Typography>
+              <Typography fontWeight={600}>{drawerStudent.roomType}</Typography>
+
+              <Typography variant="body2" color="text.secondary">
+                Monthly Fee
+              </Typography>
+              <Typography fontWeight={600}>
+                ₹{drawerStudent.monthlyFee}
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary">
+                Paid
+              </Typography>
+              <Typography fontWeight={600}>
+                ₹{getCurrentMonthPaid(drawerStudent)}
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary">
+                Due
+              </Typography>
+              <Typography
+                fontWeight={600}
+                color={
+                  drawerStudent.monthlyFee -
+                    getCurrentMonthPaid(drawerStudent) >
+                  0
+                    ? "error.main"
+                    : "success.main"
+                }
+              >
+                ₹{drawerStudent.monthlyFee - getCurrentMonthPaid(drawerStudent)}
+              </Typography>
+            </Box>
+
+            <Divider sx={{ mb: 2 }} />
+
+            <Typography variant="subtitle2" mb={2}>
+              Payment History
+            </Typography>
+
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}
+            >
+              {drawerStudent.payments
+                .slice()
+                .reverse()
+                .map((p) => (
+                  <Box
+                    key={p.id}
+                    sx={{
+                      display: "flex",
+                      gap: 2,
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    {/* timeline dot */}
+                    <Box
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: "#6366f1",
+                        mt: "6px",
+                      }}
+                    />
+
+                    {/* payment card */}
+                    <Box>
+                      <Typography fontWeight={600}>
+                        {p.month}/{p.year}
+                      </Typography>
+
+                      <Typography variant="body2">
+                        ₹{p.amountPaid} Paid
+                      </Typography>
+
+                      <Typography variant="caption" color="text.secondary">
+                        via {p.mode}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+            </Box>
+
+            <Divider sx={{ mb: 3 }} />
+
+            <Box sx={{ mb: 3 }}>
+              <Chip
+                label={
+                  drawerStudent.monthlyFee -
+                    getCurrentMonthPaid(drawerStudent) ===
+                  0
+                    ? "Fully Paid"
+                    : "Payment Due"
+                }
+                color={
+                  drawerStudent.monthlyFee -
+                    getCurrentMonthPaid(drawerStudent) ===
+                  0
+                    ? "success"
+                    : "error"
+                }
+              />
+            </Box>
+
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={() => {
+                  setDrawerStudent(null);
+                  setOpenDrawer(false);
+                }}
+              >
+                Close
+              </Button>
+              {!(
+                drawerStudent.monthlyFee -
+                  getCurrentMonthPaid(drawerStudent) ===
+                0
+              ) && (
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={() => {
+                    if (!drawerStudent) return;
+
+                    handleMarkPaid(drawerStudent);
+
+                    setDrawerStudent((prev) =>
+                      prev ? { ...prev, paidAmount: prev.monthlyFee } : null,
+                    );
+                  }}
+                >
+                  Mark Paid
+                </Button>
+              )}
+            </Box>
+          </Box>
+        )}
+      </Drawer>
     </Box>
   );
 }

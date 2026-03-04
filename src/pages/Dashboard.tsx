@@ -5,6 +5,7 @@ import BedIcon from "@mui/icons-material/Bed";
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import CountUp from "react-countup";
 
 const revenueData = [
   { name: "Collected", value: 95000 },
@@ -72,7 +73,7 @@ export default function Dashboard() {
                 <Typography variant="subtitle2">{item.label}</Typography>
 
                 <Typography variant="h5" fontWeight={700} sx={{ mt: 1 }}>
-                  {item.value}
+                  <CountUp end={Number(item.value)} duration={1.2} />
                 </Typography>
               </Box>
 
