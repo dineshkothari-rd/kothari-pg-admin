@@ -60,6 +60,7 @@ export default function Students() {
   const [openDrawer, setOpenDrawer] = useState(false);
   const [drawerStudent, setDrawerStudent] = useState<Student | null>(null);
   const [openPaymentModal, setOpenPaymentModal] = useState(false);
+  const [deleteStudentId, setDeleteStudentId] = useState<number | null>(null);
 
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMode, setPaymentMode] = useState("Cash");
@@ -897,6 +898,7 @@ export default function Students() {
             {/* Delete */}
             <MenuItem
               onClick={() => {
+                setDeleteStudentId(selectedStudent!.id);
                 setConfirmDelete(true);
                 handleMenuClose();
               }}
@@ -922,8 +924,8 @@ export default function Students() {
             color="error"
             variant="contained"
             onClick={() => {
-              if (selectedStudent) {
-                handleDelete(selectedStudent.id);
+              if (deleteStudentId) {
+                handleDelete(deleteStudentId);
               }
               setConfirmDelete(false);
             }}
