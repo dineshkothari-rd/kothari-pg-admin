@@ -7,16 +7,19 @@ import {
   Toolbar,
   Typography,
   Box,
+  Button,
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../features/auth/useAuth";
 
 const drawerWidth = 240;
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { handleLogout } = useAuth();
 
   const menuItems = [
     { label: "Dashboard", icon: <DashboardIcon />, path: "/" },
@@ -65,6 +68,7 @@ export default function Sidebar() {
             </ListItemButton>
           ))}
         </List>
+        <Button onClick={handleLogout}>Logout</Button>
       </Box>
     </Drawer>
   );

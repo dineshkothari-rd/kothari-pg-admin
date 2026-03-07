@@ -40,8 +40,8 @@ import {
   getCurrentMonthPaid,
   getPaymentProgress,
   sendWhatsAppBill,
-} from "../shared/helpers";
-import type { SortField, Student } from "../shared/types";
+} from "../../shared/helpers";
+import type { SortField, Student } from "../../shared/types";
 
 /* -------- PG Capacity -------- */
 
