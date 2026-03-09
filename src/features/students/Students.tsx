@@ -36,7 +36,6 @@ import CountUp from "react-countup";
 import {
   currentMonth,
   currentYear,
-  formatPaymentDate,
   getCurrentMonthPaid,
   getPaymentProgress,
   sendWhatsAppBill,
@@ -66,44 +65,31 @@ export default function Students() {
   const [students, setStudents] = useState<Student[]>([
     {
       id: 1,
-      name: "Rahul Sharma",
-      phone: "9876543210",
+      name: "Dinesh Kothari",
+      phone: "9812416721",
+
+      fatherName: "Ramesh Kothari",
+      age: 30,
+      parentPhone: "9812416720",
+
+      village: "Siwani",
+      tehsil: "Siwani",
+      district: "Bhiwani",
+      state: "Haryana",
+
+      occupation: "Employee at Sarvika Technologies Pvt Ltd",
+      occupationAddress: "Jaipur",
+      occupationPhone: "9876543210",
+
+      referenceName: "Ramesh Kothari",
+      referencePhone: "9812416720",
+
+      idProofType: "Aadhar",
+      idProofNumber: "483512094058",
+
       roomType: "Single",
       monthlyFee: 7500,
-      payments: [
-        {
-          id: "p1",
-          month: currentMonth,
-          year: currentYear,
-          amountPaid: 7500,
-          date: new Date().toISOString(),
-          mode: "UPI",
-        },
-      ],
-    },
-    {
-      id: 2,
-      name: "Amit Verma",
-      phone: "9123456780",
-      roomType: "Double",
-      monthlyFee: 6500,
-      payments: [
-        {
-          id: "p2",
-          month: currentMonth,
-          year: currentYear,
-          amountPaid: 4000,
-          date: new Date().toISOString(),
-          mode: "Cash",
-        },
-      ],
-    },
-    {
-      id: 3,
-      name: "Vikas Singh",
-      phone: "9988776655",
-      roomType: "Single",
-      monthlyFee: 7500,
+
       payments: [],
     },
   ]);
@@ -118,7 +104,26 @@ export default function Students() {
 
   const [formData, setFormData] = useState({
     name: "",
+    fatherName: "",
+    age: "",
     phone: "",
+    parentPhone: "",
+
+    village: "",
+    tehsil: "",
+    district: "",
+    state: "",
+
+    occupation: "",
+    occupationAddress: "",
+    occupationPhone: "",
+
+    referenceName: "",
+    referencePhone: "",
+
+    idProofType: "",
+    idProofNumber: "",
+
     roomType: "",
     monthlyFee: "",
     paidAmount: "",
@@ -174,6 +179,31 @@ export default function Students() {
     setSearch("");
     setRoomFilter("All");
     setStatusFilter("All");
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData({
+      name: "",
+      fatherName: "",
+      age: "",
+      phone: "",
+      parentPhone: "",
+      village: "",
+      tehsil: "",
+      district: "",
+      state: "",
+      occupation: "",
+      occupationAddress: "",
+      occupationPhone: "",
+      referenceName: "",
+      referencePhone: "",
+      idProofType: "",
+      idProofNumber: "",
+      roomType: "",
+      monthlyFee: "",
+      paidAmount: "",
+    });
   };
 
   /* -------- Save Student -------- */
@@ -238,10 +268,32 @@ export default function Students() {
 
       const newStudent: Student = {
         id: Date.now(),
+
         name: formData.name,
+        fatherName: formData.fatherName,
+        age: Number(formData.age),
+
         phone: formData.phone,
+        parentPhone: formData.parentPhone,
+
+        village: formData.village,
+        tehsil: formData.tehsil,
+        district: formData.district,
+        state: formData.state,
+
+        occupation: formData.occupation,
+        occupationAddress: formData.occupationAddress,
+        occupationPhone: formData.occupationPhone,
+
+        referenceName: formData.referenceName,
+        referencePhone: formData.referencePhone,
+
+        idProofType: formData.idProofType,
+        idProofNumber: formData.idProofNumber,
+
         roomType: formData.roomType,
         monthlyFee,
+
         payments: paidAmount
           ? [
               {
@@ -263,7 +315,26 @@ export default function Students() {
     setEditingId(null);
     setFormData({
       name: "",
+      fatherName: "",
+      age: "",
       phone: "",
+      parentPhone: "",
+
+      village: "",
+      tehsil: "",
+      district: "",
+      state: "",
+
+      occupation: "",
+      occupationAddress: "",
+      occupationPhone: "",
+
+      referenceName: "",
+      referencePhone: "",
+
+      idProofType: "",
+      idProofNumber: "",
+
       roomType: "",
       monthlyFee: "",
       paidAmount: "",
@@ -712,25 +783,52 @@ export default function Students() {
 
       <Dialog
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          resetForm();
+          setOpen(false);
+        }}
         fullWidth
         maxWidth="sm"
       >
         <DialogTitle>{editingId ? "Edit Student" : "Add Student"}</DialogTitle>
 
         <DialogContent
-          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 2,
+            pt: 5,
+          }}
         >
           {error && <Alert severity="error">{error}</Alert>}
 
           <TextField
-            label="Name"
+            label="Student Name"
+            size="small"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
 
           <TextField
-            label="Phone"
+            label="Father Name"
+            size="small"
+            value={formData.fatherName}
+            onChange={(e) =>
+              setFormData({ ...formData, fatherName: e.target.value })
+            }
+          />
+
+          <TextField
+            label="Age"
+            type="number"
+            size="small"
+            value={formData.age}
+            onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+          />
+
+          <TextField
+            label="Student Phone"
+            size="small"
             value={formData.phone}
             onChange={(e) =>
               setFormData({ ...formData, phone: e.target.value })
@@ -738,38 +836,128 @@ export default function Students() {
           />
 
           <TextField
-            select
-            label="Room Type"
-            value={formData.roomType}
+            label="Parent Phone"
+            size="small"
+            value={formData.parentPhone}
             onChange={(e) =>
-              setFormData({ ...formData, roomType: e.target.value })
-            }
-          >
-            <MenuItem value="Single">Single</MenuItem>
-            <MenuItem value="Double">Double</MenuItem>
-          </TextField>
-
-          <TextField
-            label="Monthly Fee"
-            type="number"
-            value={formData.monthlyFee}
-            onChange={(e) =>
-              setFormData({ ...formData, monthlyFee: e.target.value })
+              setFormData({ ...formData, parentPhone: e.target.value })
             }
           />
 
           <TextField
-            label="Paid Amount"
-            type="number"
-            value={formData.paidAmount}
+            label="Village"
+            size="small"
+            value={formData.village}
             onChange={(e) =>
-              setFormData({ ...formData, paidAmount: e.target.value })
+              setFormData({ ...formData, village: e.target.value })
+            }
+          />
+
+          <TextField
+            label="Tehsil"
+            size="small"
+            value={formData.tehsil}
+            onChange={(e) =>
+              setFormData({ ...formData, tehsil: e.target.value })
+            }
+          />
+
+          <TextField
+            label="District"
+            size="small"
+            value={formData.district}
+            onChange={(e) =>
+              setFormData({ ...formData, district: e.target.value })
+            }
+          />
+
+          <TextField
+            label="State"
+            size="small"
+            value={formData.state}
+            onChange={(e) =>
+              setFormData({ ...formData, state: e.target.value })
+            }
+          />
+
+          <TextField
+            label="Occupation"
+            size="small"
+            value={formData.occupation}
+            onChange={(e) =>
+              setFormData({ ...formData, occupation: e.target.value })
+            }
+          />
+
+          <TextField
+            label="Occupation Address"
+            size="small"
+            value={formData.occupationAddress}
+            onChange={(e) =>
+              setFormData({ ...formData, occupationAddress: e.target.value })
+            }
+          />
+
+          <TextField
+            label="Occupation Phone"
+            size="small"
+            value={formData.occupationPhone}
+            onChange={(e) =>
+              setFormData({ ...formData, occupationPhone: e.target.value })
+            }
+          />
+
+          <TextField
+            label="Reference Name"
+            size="small"
+            value={formData.referenceName}
+            onChange={(e) =>
+              setFormData({ ...formData, referenceName: e.target.value })
+            }
+          />
+
+          <TextField
+            label="Reference Phone"
+            size="small"
+            value={formData.referencePhone}
+            onChange={(e) =>
+              setFormData({ ...formData, referencePhone: e.target.value })
+            }
+          />
+
+          <TextField
+            select
+            label="ID Proof"
+            size="small"
+            value={formData.idProofType}
+            onChange={(e) =>
+              setFormData({ ...formData, idProofType: e.target.value })
+            }
+          >
+            <MenuItem value="Aadhar">Aadhar Card</MenuItem>
+            <MenuItem value="Driving">Driving License</MenuItem>
+            <MenuItem value="Voter">Voter ID</MenuItem>
+          </TextField>
+
+          <TextField
+            label="ID Proof Number"
+            size="small"
+            value={formData.idProofNumber}
+            onChange={(e) =>
+              setFormData({ ...formData, idProofNumber: e.target.value })
             }
           />
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              resetForm();
+              setOpen(false);
+            }}
+          >
+            Cancel
+          </Button>
           <Button variant="contained" onClick={handleSaveStudent}>
             {editingId ? "Update" : "Save"}
           </Button>
@@ -805,7 +993,26 @@ export default function Students() {
                 setEditingId(selectedStudent.id);
                 setFormData({
                   name: selectedStudent.name,
+                  fatherName: selectedStudent.fatherName || "",
+                  age: selectedStudent.age?.toString() || "",
                   phone: selectedStudent.phone,
+                  parentPhone: selectedStudent.parentPhone || "",
+
+                  village: selectedStudent.village || "",
+                  tehsil: selectedStudent.tehsil || "",
+                  district: selectedStudent.district || "",
+                  state: selectedStudent.state || "",
+
+                  occupation: selectedStudent.occupation || "",
+                  occupationAddress: selectedStudent.occupationAddress || "",
+                  occupationPhone: selectedStudent.occupationPhone || "",
+
+                  referenceName: selectedStudent.referenceName || "",
+                  referencePhone: selectedStudent.referencePhone || "",
+
+                  idProofType: selectedStudent.idProofType || "",
+                  idProofNumber: selectedStudent.idProofNumber || "",
+
                   roomType: selectedStudent.roomType,
                   monthlyFee: selectedStudent.monthlyFee.toString(),
                   paidAmount: getCurrentMonthPaid(selectedStudent).toString(),
@@ -894,126 +1101,164 @@ export default function Students() {
         {drawerStudent && (
           <Box sx={{ p: 3 }}>
             {/* Header */}
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                mb: 3,
-              }}
-            >
+            <Box display="flex" alignItems="center" gap={2} mb={3}>
               <Box
                 sx={{
-                  width: 56,
-                  height: 56,
+                  width: 60,
+                  height: 60,
                   borderRadius: "50%",
-                  background: "#6366f1",
+                  background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
                   color: "#fff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontWeight: 600,
-                  fontSize: 20,
+                  fontWeight: 700,
+                  fontSize: 22,
                 }}
               >
-                {drawerStudent.name.charAt(0)}
+                {drawerStudent?.name?.charAt(0)}
               </Box>
 
               <Box>
                 <Typography variant="h6" fontWeight={700}>
-                  {drawerStudent.name}
+                  {drawerStudent?.name}
                 </Typography>
+
                 <Typography variant="body2" color="text.secondary">
-                  {drawerStudent.phone}
+                  {drawerStudent?.phone}
                 </Typography>
               </Box>
             </Box>
 
             <Divider sx={{ mb: 3 }} />
 
-            {/* Info Grid */}
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                rowGap: 2,
-                columnGap: 2,
-                mb: 3,
-              }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                Room
-              </Typography>
-              <Typography fontWeight={600}>{drawerStudent.roomType}</Typography>
+            {/* Personal Info */}
+            <Typography variant="subtitle2" fontWeight={700} mb={1}>
+              Personal Details
+            </Typography>
 
-              <Typography variant="body2" color="text.secondary">
-                Monthly Fee
-              </Typography>
-              <Typography fontWeight={600}>
-                ₹{drawerStudent.monthlyFee}
-              </Typography>
-
-              <Typography variant="body2" color="text.secondary">
-                Paid
-              </Typography>
-
-              {drawerStudent.payments
-                .slice()
-                .reverse()
-                .map((p) => (
-                  <Box
-                    key={p.id}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight={600}>
-                      ₹{p.amountPaid}
-                    </Typography>
-
-                    <Typography variant="caption" color="text.secondary">
-                      {p.mode} • {formatPaymentDate(p.date)}
-                    </Typography>
-                  </Box>
-                ))}
-
-              <Typography variant="body2" color="text.secondary">
-                Due
-              </Typography>
-              <Typography
-                fontWeight={600}
-                color={
-                  drawerStudent.monthlyFee -
-                    getCurrentMonthPaid(drawerStudent) >
-                  0
-                    ? "error.main"
-                    : "success.main"
-                }
-              >
-                ₹{drawerStudent.monthlyFee - getCurrentMonthPaid(drawerStudent)}
-              </Typography>
-            </Box>
-
-            <Divider sx={{ mb: 2 }} />
-
-            <Box sx={{ mb: 3 }}>
-              <Stack direction="row" alignItems="center" gap={1}>
-                <Typography variant="body2" color="text.secondary">
-                  Payment Progress{" "}
+            <Grid container spacing={2} mb={3}>
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <Typography variant="caption">Father</Typography>
+                <Typography fontWeight={600}>
+                  {drawerStudent?.fatherName || "-"}
                 </Typography>
+              </Grid>
+
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <Typography variant="caption">Age</Typography>
+                <Typography fontWeight={600}>
+                  {drawerStudent?.age || "-"}
+                </Typography>
+              </Grid>
+
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <Typography variant="caption">Parent Phone</Typography>
+                <Typography fontWeight={600}>
+                  {drawerStudent?.parentPhone || "-"}
+                </Typography>
+              </Grid>
+
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <Typography variant="caption">Occupation</Typography>
+                <Typography fontWeight={600}>
+                  {drawerStudent?.occupation || "-"}
+                </Typography>
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ mb: 3 }} />
+
+            {/* Address */}
+            <Typography variant="subtitle2" fontWeight={700} mb={1}>
+              Address
+            </Typography>
+
+            <Grid container spacing={2} mb={3}>
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <Typography variant="caption">Village</Typography>
+                <Typography fontWeight={600}>
+                  {drawerStudent?.village || "-"}
+                </Typography>
+              </Grid>
+
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <Typography variant="caption">District</Typography>
+                <Typography fontWeight={600}>
+                  {drawerStudent?.district || "-"}
+                </Typography>
+              </Grid>
+
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <Typography variant="caption">State</Typography>
+                <Typography fontWeight={600}>
+                  {drawerStudent?.state || "-"}
+                </Typography>
+              </Grid>
+
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <Typography variant="caption">Reference</Typography>
+                <Typography fontWeight={600}>
+                  {drawerStudent?.referenceName || "-"}
+                </Typography>
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ mb: 3 }} />
+
+            <Typography variant="subtitle2" fontWeight={700} mb={1}>
+              Room Details
+            </Typography>
+
+            <Grid container spacing={2} mb={3}>
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <Stack>
+                  <Typography variant="caption">Room Type</Typography>
+                  <Chip
+                    label={drawerStudent?.roomType}
+                    color={
+                      drawerStudent?.roomType === "Single"
+                        ? "primary"
+                        : "secondary"
+                    }
+                    size="small"
+                    sx={{
+                      maxWidth: "max-content",
+                    }}
+                  />
+                </Stack>
+              </Grid>
+
+              <Grid size={{ xs: 6, sm: 4 }}>
+                <Typography variant="caption">Monthly Fee</Typography>
+                <Typography fontWeight={700}>
+                  ₹{drawerStudent?.monthlyFee}
+                </Typography>
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ mb: 3 }} />
+
+            {/* Payment */}
+            <Typography variant="subtitle2" fontWeight={700} mb={1}>
+              Payment
+            </Typography>
+
+            <Box mb={3}>
+              <Stack direction="row" alignItems="center" gap={1}>
+                <Typography variant="body2">Status</Typography>
+
                 <Chip
                   size="small"
                   label={
-                    drawerStudent.monthlyFee -
+                    drawerStudent?.monthlyFee -
                       getCurrentMonthPaid(drawerStudent) ===
                     0
-                      ? "Fully Paid"
-                      : "Payment Due"
+                      ? "Paid"
+                      : "Due"
                   }
                   color={
-                    drawerStudent.monthlyFee -
+                    drawerStudent?.monthlyFee -
                       getCurrentMonthPaid(drawerStudent) ===
                     0
                       ? "success"
@@ -1035,53 +1280,42 @@ export default function Students() {
                   sx={{
                     width: `${getPaymentProgress(drawerStudent)}%`,
                     height: "100%",
-                    background:
-                      getPaymentProgress(drawerStudent) === 100
-                        ? "#10b981"
-                        : "#6366f1",
-                    transition: "width 0.4s",
+                    background: "#6366f1",
                   }}
                 />
               </Box>
 
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption">
                 ₹{getCurrentMonthPaid(drawerStudent)} / ₹
-                {drawerStudent.monthlyFee}
+                {drawerStudent?.monthlyFee}
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
-              {drawerStudent.monthlyFee - getCurrentMonthPaid(drawerStudent) >
-                0 && (
-                <Button
-                  startIcon={<WhatsAppIcon />}
-                  fullWidth
-                  sx={{
-                    mb: 3,
-                    textTransform: "none",
-                    background: "#25D366",
-                    "&:hover": { background: "#1ebe5d" },
-                  }}
-                  variant="contained"
-                  onClick={() =>
-                    sendWhatsAppBill({
-                      name: drawerStudent.name,
-                      phone: drawerStudent.phone,
-                      monthlyFee: drawerStudent.monthlyFee,
-                      paidAmount: getCurrentMonthPaid(drawerStudent),
-                    })
-                  }
-                >
-                  Send WhatsApp Reminder
-                </Button>
-              )}
+            <Stack direction="row" spacing={2}>
+              <Button
+                startIcon={<WhatsAppIcon />}
+                fullWidth
+                variant="contained"
+                sx={{
+                  background: "#25D366",
+                  "&:hover": { background: "#1ebe5d" },
+                }}
+                onClick={() =>
+                  sendWhatsAppBill({
+                    name: drawerStudent.name,
+                    phone: drawerStudent.phone,
+                    monthlyFee: drawerStudent.monthlyFee,
+                    paidAmount: getCurrentMonthPaid(drawerStudent),
+                  })
+                }
+              >
+                Send Reminder
+              </Button>
+
               <Button
                 variant="contained"
                 fullWidth
-                onClick={() => {
-                  setDrawerStudent(null);
-                  setOpenDrawer(false);
-                }}
+                onClick={() => setOpenDrawer(false)}
               >
                 Close
               </Button>

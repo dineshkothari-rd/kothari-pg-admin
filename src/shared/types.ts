@@ -9,10 +9,33 @@ export type Payment = {
 
 export type Student = {
   id: number;
+
   name: string;
   phone: string;
+
+  fatherName?: string;
+  age?: number;
+
+  parentPhone?: string;
+
+  village?: string;
+  tehsil?: string;
+  district?: string;
+  state?: string;
+
+  occupation?: string;
+  occupationAddress?: string;
+  occupationPhone?: string;
+
+  referenceName?: string;
+  referencePhone?: string;
+
+  idProofType?: string;
+  idProofNumber?: string;
+
   roomType: string;
   monthlyFee: number;
+
   payments: Payment[];
 };
 
